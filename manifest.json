@@ -7,7 +7,11 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/scripts/readPageData.ts"]
+      "js": [
+        "src/model/JobApplication.ts",
+        "src/model/MessageResponse.ts",
+        "src/scripts/readPageData.ts"
+      ]
     }
   ]
 }

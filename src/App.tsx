@@ -1,11 +1,7 @@
-type Application = {
-  companyName: string;
-  jobTitle: string;
-  jobLocation: string;
-  date: string;
-};
+import JobApplication from "./model/JobApplication";
+import MessageResponse, { ResponseStatus } from "./model/MessageResponse";
 
-const saveApplication = async (application: Application) => {
+const saveApplication = async (application: JobApplication) => {
   let applications = (await getApplicationData()) ?? [];
   applications = [...applications, application];
   chrome.storage.local.set({ applications });
@@ -35,7 +31,7 @@ const clearApplicationsData = async () => {
   await chrome.storage.local.clear();
 };
 
-const applicationsToCsv = (application: Application) => {
+const applicationsToCsv = (application: JobApplication) => {
   const valuesArr = [
     application.jobTitle,
     application.companyName,
@@ -54,16 +50,19 @@ function App() {
     });
 
     if (tab.id) {
-      const res = await chrome.tabs.sendMessage(tab.id, {});
+      const res = await chrome.tabs.sendMessage<null, MessageResponse>(
+        tab.id,
+        null
+      );
 
-      const application = {
-        ...res,
-        date: new Date().toLocaleDateString("fr-FR"),
-      } as Application;
+      if (res.status === ResponseStatus.Success) {
+        const { jobApplication } = res;
 
-      console.log(await getApplicationData());
-      saveApplication(application);
-      console.log(application);
+        if (jobApplication && !Object.values(jobApplication).some((e) => !e)) {
+          saveApplication(jobApplication);
+          console.log(jobApplication);
+        }
+      }
     }
   };
   return (
