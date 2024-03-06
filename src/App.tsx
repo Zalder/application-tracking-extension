@@ -1,48 +1,14 @@
-import JobApplication from "./model/JobApplication";
+import { faCheck, faX } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
+import { useServicesContext } from "./context/ServicesContext";
 import MessageResponse, { ResponseStatus } from "./model/MessageResponse";
 
-const saveApplication = async (application: JobApplication) => {
-  let applications = (await getApplicationData()) ?? [];
-  applications = [...applications, application];
-  chrome.storage.local.set({ applications });
-};
-
-const getApplicationData = async () => {
-  const { applications } = await chrome.storage.local.get("applications");
-  return applications;
-};
-
-const saveApplicationsToCsv = async () => {
-  const applications = await getApplicationData();
-  console.log(applications);
-  const csvData = applications.map(applicationsToCsv).join("\n");
-  console.log(csvData);
-
-  const blob = new Blob([csvData], { type: "text/csv" });
-  const blobURL = URL.createObjectURL(blob);
-
-  chrome.downloads.download({
-    url: blobURL,
-    filename: "applications.csv",
-  });
-};
-
-const clearApplicationsData = async () => {
-  await chrome.storage.local.clear();
-};
-
-const applicationsToCsv = (application: JobApplication) => {
-  const valuesArr = [
-    application.jobTitle,
-    application.companyName,
-    application.date,
-    "Applied",
-    application.jobLocation,
-  ];
-  return Object.values(valuesArr).join(";");
-};
-
 function App() {
+  const [isIconDisplayed, setIsIconDisplayed] = useState(false);
+  const [isAddSuccess, setIsAddSuccess] = useState(false);
+  const { jobApplicationService } = useServicesContext();
+
   const onTrackApplication = async () => {
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -59,20 +25,35 @@ function App() {
         const { jobApplication } = res;
 
         if (jobApplication && !Object.values(jobApplication).some((e) => !e)) {
-          saveApplication(jobApplication);
+          jobApplicationService.saveApplication(jobApplication);
           console.log(jobApplication);
         }
       }
+
+      setIsAddSuccess(res.status === ResponseStatus.Success);
+      setIsIconDisplayed(true);
+      setTimeout(() => setIsIconDisplayed(false), 3000);
     }
   };
+
   return (
-    <>
-      <button onClick={onTrackApplication}>Add job application</button>
-      <button onClick={() => saveApplicationsToCsv()}>
+    <div className="text-sm p-1">
+      <div className="flex flex-row gap-1 items-center">
+        <button onClick={onTrackApplication}>Add job application</button>
+        {isIconDisplayed && (
+          <FontAwesomeIcon
+            icon={isAddSuccess ? faCheck : faX}
+            style={{ color: isAddSuccess ? "#63E6BE" : "#ff3d3d" }}
+          />
+        )}
+      </div>
+      <button onClick={() => jobApplicationService.saveApplicationsToCsv()}>
         Download job applications
       </button>
-      <button onClick={() => clearApplicationsData()}>Clear data</button>
-    </>
+      <button onClick={() => jobApplicationService.clearApplicationsData()}>
+        Clear data
+      </button>
+    </div>
   );
 }
 

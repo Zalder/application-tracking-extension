@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+    width: 200px;
+    height: 100px;
+}
+
+button {
+    text-align:left;
+}
